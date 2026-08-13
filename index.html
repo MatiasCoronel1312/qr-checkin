@@ -50,14 +50,87 @@
 
     <script>
         let scanner;
-        function qrDetectado(decodedText, decodedResult) {
-            console.log("QR detectado:", decodedText);
-            scanner.clear();
-            document.getElementById("resultado").innerHTML =
-                "Código detectado:<br><strong>" +
-                decodedText +
-                "</strong>";
+        async function qrDetectado(decodedText, decodedResult) {
+
+    console.log("QR detectado:", decodedText);
+    await scanner.clear();
+    const resultado = document.getElementById("resultado");
+    resultado.className = "";
+    resultado.innerHTML = "⏳ Validando ingreso...";
+    try {
+        const urlAppsScript =
+            "https://script.google.com/macros/s/AKfycbz30p3Mkc_cd9tzEOlAC-MioztcoJNcpBTo0IMaHQQEG9LTEKbotD2U0An6SfQ1unvy/exec";
+        const url =
+            urlAppsScript +
+            "?id=" +
+            encodeURIComponent(decodedText);
+        const respuesta = await fetch(url);
+        const datos = await respuesta.json();
+        console.log("Respuesta:", datos);
+        // AUTORIZADO
+        if (datos.estado === "AUTORIZADO") {
+            resultado.className = "ok";
+            resultado.innerHTML = `
+                <h2>✅ INGRESO AUTORIZADO</h2>
+                <p>
+                    <strong>
+                        ${datos.nombre} ${datos.apellido}
+                    </strong>
+                </p>
+                <p>
+                    DNI: ${datos.dni}
+                </p>
+                <p>
+                    Ingreso registrado correctamente.
+                </p>
+            `;
         }
+        // YA REGISTRADO
+        else if (datos.estado === "YA_REGISTRADO") {
+            resultado.className = "error";
+            resultado.innerHTML = `
+                <h2>⚠️ YA REGISTRADO</h2>
+                <p>
+                    <strong>
+                        ${datos.nombre} ${datos.apellido}
+                    </strong>
+                </p>
+                <p>
+                    Este código ya fue utilizado.
+                </p>
+            `;
+        }
+        // NO ENCONTRADO
+        else if (datos.estado === "NO_ENCONTRADO") {
+            resultado.className = "error";
+            resultado.innerHTML = `
+                <h2>❌ QR NO VÁLIDO</h2>
+                <p>
+                    La inscripción no existe.
+                </p>
+            `;
+        }
+        // OTRO ERROR
+        else {
+            resultado.className = "error";
+            resultado.innerHTML = `
+                <h2>❌ ERROR</h2>
+                <p>
+                    No se pudo validar el código.
+                </p>
+            `;
+        }
+    } catch (error) {
+        console.error(error);
+        resultado.className = "error";
+        resultado.innerHTML = `
+            <h2>❌ ERROR DE CONEXIÓN</h2>
+            <p>
+                No se pudo contactar con el servidor.
+            </p>
+        `;
+    }
+}
 
         scanner = new Html5QrcodeScanner(
             "reader",
