@@ -2,136 +2,125 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1">
     <title>Control de ingreso</title>
     <script src="https://unpkg.com/html5-qrcode"
             type="text/javascript"></script>
     <style>
+        * {
+            box-sizing: border-box;
+        }
         body {
             font-family: Arial, sans-serif;
-            text-align: center;
             margin: 0;
+            min-height: 100vh;
+            background: #e5500e;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
             padding: 20px;
-            background: #f2f2f2;
+        }
+        .container {
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
         }
         h1 {
-            margin-bottom: 20px;
+            margin: 0 0 20px 0;
+            font-size: 28px;
+        }
+        .card {
+            background: white;
+            color: #7a2a0a;
+            border-radius: 18px;
+            padding: 20px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
         }
         #reader {
             width: 100%;
-            max-width: 500px;
             margin: auto;
-            background: white;
+            overflow: hidden;
+            border-radius: 12px;
         }
         #resultado {
-            margin: 20px auto;
+            margin-top: 20px;
             padding: 20px;
-            max-width: 500px;
-            border-radius: 10px;
-            background: white;
+            border-radius: 12px;
+            background: #f5f5f5;
+            color: #7a2a0a;
+            min-height: 80px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
-        .ok {
-            background: #d4edda !important;
+        #resultado.ok {
+            background: #d4edda;
             color: #155724;
         }
-        .error {
-            background: #f8d7da !important;
+        #resultado.error {
+            background: #f8d7da;
             color: #721c24;
+        }
+        #resultado h2 {
+            margin-top: 0;
+        }
+        #resultado p {
+            margin: 6px 0;
+        }
+        #botonSiguiente {
+            display: none;
+            width: 100%;
+            margin-top: 15px;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            background: #7a2a0a;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        #botonSiguiente:hover {
+            opacity: 0.9;
+        }
+        .footer {
+            margin-top: 15px;
+            font-size: 13px;
+            opacity: 0.9;
         }
     </style>
 </head>
 
 <body>
+<div class="container">
     <h1>Control de ingreso</h1>
-    <div id="reader"></div>
-    <div id="resultado">
-        Esperando código QR...
+    <div class="card">
+        <div id="reader"></div>
+        <div id="resultado">
+            <strong>Esperando código QR...</strong>
+        </div>
+        <button id="botonSiguiente"
+                onclick="iniciarScanner()">
+            📷 Escanear siguiente
+</button>
     </div>
-
-    <script>
-        let scanner;
-        async function qrDetectado(decodedText, decodedResult) {
-
-    console.log("QR detectado:", decodedText);
-    await scanner.clear();
-    const resultado = document.getElementById("resultado");
-    resultado.className = "";
-    resultado.innerHTML = "⏳ Validando ingreso...";
-    try {
-        const urlAppsScript =
-            "https://script.google.com/macros/s/AKfycbz30p3Mkc_cd9tzEOlAC-MioztcoJNcpBTo0IMaHQQEG9LTEKbotD2U0An6SfQ1unvy/exec";
-        const url =
-            urlAppsScript +
-            "?id=" +
-            encodeURIComponent(decodedText);
-        const respuesta = await fetch(url);
-        const datos = await respuesta.json();
-        console.log("Respuesta:", datos);
-        // AUTORIZADO
-        if (datos.estado === "AUTORIZADO") {
-            resultado.className = "ok";
-            resultado.innerHTML = `
-                <h2>✅ INGRESO AUTORIZADO</h2>
-                <p>
-                    <strong>
-                        ${datos.nombre} ${datos.apellido}
-                    </strong>
-                </p>
-                <p>
-                    DNI: ${datos.dni}
-                </p>
-                <p>
-                    Ingreso registrado correctamente.
-                </p>
-            `;
-        }
-        // YA REGISTRADO
-        else if (datos.estado === "YA_REGISTRADO") {
-            resultado.className = "error";
-            resultado.innerHTML = `
-                <h2>⚠️ YA REGISTRADO</h2>
-                <p>
-                    <strong>
-                        ${datos.nombre} ${datos.apellido}
-                    </strong>
-                </p>
-                <p>
-                    Este código ya fue utilizado.
-                </p>
-            `;
-        }
-        // NO ENCONTRADO
-        else if (datos.estado === "NO_ENCONTRADO") {
-            resultado.className = "error";
-            resultado.innerHTML = `
-                <h2>❌ QR NO VÁLIDO</h2>
-                <p>
-                    La inscripción no existe.
-                </p>
-            `;
-        }
-        // OTRO ERROR
-        else {
-            resultado.className = "error";
-            resultado.innerHTML = `
-                <h2>❌ ERROR</h2>
-                <p>
-                    No se pudo validar el código.
-                </p>
-            `;
-        }
-    } catch (error) {
-        console.error(error);
-        resultado.className = "error";
-        resultado.innerHTML = `
-            <h2>❌ ERROR DE CONEXIÓN</h2>
-            <p>
-                No se pudo contactar con el servidor.
-            </p>
-        `;
-    }
-}
-
+    <div class="footer">
+        Sistema de control de ingreso
+    </div>
+</div>
+<script>
+    let scanner = null;
+    // Iniciar lector
+    function iniciarScanner() {
+        const reader = document.getElementById("reader");
+        const resultado = document.getElementById("resultado");
+        const boton = document.getElementById("botonSiguiente");
+        resultado.className = "";
+        resultado.innerHTML =
+            "<strong>Esperando código QR...</strong>";
+        boton.style.display = "none";
         scanner = new Html5QrcodeScanner(
             "reader",
             {
@@ -143,8 +132,104 @@
             },
             false
         );
-
         scanner.render(qrDetectado);
-    </script>
+    }
+    // QR detectado
+    async function qrDetectado(decodedText, decodedResult) {
+        console.log("QR detectado:", decodedText);
+        await scanner.clear();
+        const resultado =
+            document.getElementById("resultado");
+        resultado.className = "";
+        resultado.innerHTML =
+            "⏳ Validando ingreso...";
+        try {
+            const urlAppsScript =
+                "PEGÁ_ACÁ_TU_URL_DE_APPS_SCRIPT";
+            const url =
+                urlAppsScript +
+                "?id=" +
+                encodeURIComponent(decodedText);
+            const respuesta =
+                await fetch(url);
+            const datos =
+                await respuesta.json();
+            console.log("Respuesta:", datos);
+            // AUTORIZADO
+            if (datos.estado === "AUTORIZADO") {
+                resultado.className = "ok";
+                resultado.innerHTML = `
+                    <h2>✅ INGRESO AUTORIZADO</h2>
+                    <p>
+                        <strong>
+                            ${datos.nombre}
+                            ${datos.apellido}
+                        </strong>
+                    </p>
+
+                    <p>
+                        DNI: ${datos.dni}
+                    </p>
+
+                    <p>
+                        Ingreso registrado correctamente.
+                    </p>
+                `;
+            }
+            // YA REGISTRADO
+            else if (datos.estado === "YA_REGISTRADO") {
+                resultado.className = "error";
+                resultado.innerHTML = `
+                    <h2>⚠️ YA REGISTRADO</h2>
+                    <p>
+                        <strong>
+                            ${datos.nombre}
+                            ${datos.apellido}
+                        </strong>
+                    </p>
+                    <p>
+                        Este código ya fue utilizado.
+                    </p>
+                `;
+            }
+            // NO ENCONTRADO
+            else if (datos.estado === "NO_ENCONTRADO") {
+                resultado.className = "error";
+                resultado.innerHTML = `
+                    <h2>❌ QR NO VÁLIDO</h2>
+                    <p>
+                        La inscripción no existe.
+                    </p>
+                `;
+            }
+            // ERROR
+            else {
+                resultado.className = "error";
+                resultado.innerHTML = `
+                    <h2>❌ ERROR</h2>
+                    <p>
+                        No se pudo validar el código.
+                    </p>
+                `;
+            }
+        }
+        catch (error) {
+            console.error(error);
+            resultado.className = "error";
+            resultado.innerHTML = `
+                <h2>❌ ERROR DE CONEXIÓN</h2>
+                <p>
+                    No se pudo contactar con el servidor.
+                </p>
+            `;
+        }
+        // Mostrar botón nuevamente
+        document.getElementById(
+            "botonSiguiente"
+        ).style.display = "block";
+    }
+    // Iniciar automáticamente
+    iniciarScanner();
+</script>
 </body>
 </html>
